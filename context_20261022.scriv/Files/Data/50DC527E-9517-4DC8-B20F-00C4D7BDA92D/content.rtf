@@ -1,0 +1,294 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\froman\fcharset0 Times-Bold;\f2\froman\fcharset0 Times-Roman;
+\f3\fmodern\fcharset0 Courier;\f4\fnil\fcharset0 Menlo-Regular;\f5\froman\fcharset0 Times-Italic;
+}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green0\blue233;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c0\c0\c93333;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}}{\leveltext\leveltemplateid1\'01\'00;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid1}
+{\list\listtemplateid2\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid101\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid2}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}}
+\deftab720
+\pard\pardeftab720\sa321\partightenfactor0
+
+\f0\fs24 \cf0 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 <$Scr_H::1>
+\f1\b\fs48 TMFP Daily Piece Recorder \'97 v0.1\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f0\b0\fs24 \cf0 \strokec2 <!$Scr_H::1>
+\f2 A small 
+\f1\b working CLI for macOS/Linux
+\f2\b0 : one Git repo per local day, stable identifiers, OBS-compatible text metadata, append-only JSONL events, YouTube chapter notes, small source artifacts, remote-media references, and SHA-256 Merkle sealing. Deliberately boring internals for an absurdly ambitious use case.\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f1\b \cf0 Prerequisites:
+\f2\b0  Python 3.10+ and Git. No pip dependencies. GitHub publishing additionally needs an authenticated {\field{\*\fldinst{HYPERLINK "https://cli.github.com/"}}{\fldrslt \cf3 \ul \ulc3 \strokec3 GitHub CLI}} (
+\f3\fs26 \strokec2 gh auth login
+\f2\fs24 \strokec2 ). You can use the tool locally without a GitHub account.\
+\pard\pardeftab720\sa280\partightenfactor0
+
+\f0 \cf0 <$Scr_H::3>
+\f1\b\fs28 Quick start\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b0\fs24 \cf0 \strokec2 <!$Scr_H::3>
+\f3\fs26 # Extract the zip / save tmfp.py and cd into its folder.\
+python3 tmfp.py --home ~/tmfp-record init --timezone America/Anchorage\
+\
+# Begin a session, creating today's daily Git repository automatically:\
+python3 tmfp.py --home ~/tmfp-record start \\\
+  --title 'Vibe-Inventing World Peace | Day 001 of ???' \\\
+  --mode WORKBENCH --topic 'World Piece Computer prototype'\
+\
+# During the live stream (no need to interrupt the actual work):\
+python3 tmfp.py --home ~/tmfp-record chapter 'An interesting result'\
+python3 tmfp.py --home ~/tmfp-record mode REACTION --topic 'Reading a paper'\
+python3 tmfp.py --home ~/tmfp-record event hypothesis \\\
+  --note 'Need to falsify this' --data '\{"prediction":"test later"\}'\
+\
+# Add small artifacts you want versioned (max 10 MiB by default):\
+python3 tmfp.py --home ~/tmfp-record attach ./notes.md --kind piece\
+python3 tmfp.py --home ~/tmfp-record checkpoint --message 'first working sketch'\
+\
+# Finish the stream, and add the final replay reference later:\
+python3 tmfp.py --home ~/tmfp-record stop\
+python3 tmfp.py --home ~/tmfp-record link youtube \\\
+  'https://www.youtube.com/watch?v=REPLACE_WITH_REAL_ID' --kind replay\
+python3 tmfp.py --home ~/tmfp-record link substack \\\
+  'https://yourpublication.substack.com/p/your-post' --kind post\
+python3 tmfp.py --home ~/tmfp-record link huggingface \\\
+  'https://huggingface.co/datasets/owner/dataset' --kind dataset\
+\
+# Hash all tracked daily files into a reproducible Merkle tree; commit the seal:\
+python3 tmfp.py --home ~/tmfp-record seal\
+python3 tmfp.py --home ~/tmfp-record verify\
+python3 tmfp.py --home ~/tmfp-record status\
+\
+# Optional: private GitHub remote by default. Carefully review before publishing.\
+python3 tmfp.py --home ~/tmfp-record publish --owner YOUR_GITHUB_USERNAME\
+# If you really want this daily repo PUBLIC, specify --public explicitly:\
+# python3 tmfp.py --home ~/tmfp-record publish --owner YOU --public\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f2\fs24 \cf0 \strokec2 Put 
+\f3\fs26 \strokec2 --home PATH
+\f2\fs24 \strokec2  
+\f1\b before
+\f2\b0  the subcommand, as shown. For a specific historical day, append 
+\f3\fs26 \strokec2 --date YYYY-MM-DD
+\f2\fs24 \strokec2  to the individual command. Without 
+\f3\fs26 \strokec2 --date
+\f2\fs24 \strokec2 , commands use the active stream's starting calendar day, or the current date in the configured time zone. Thus a stream crossing midnight does not accidentally end up in two repositories.\
+Recommended tiny shell helper to avoid retyping the home directory:\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs26 \cf0 \strokec2 # Put in ~/.zshrc, after adjusting the location of tmfp.py:\
+tmfp() \{ python3 "$HOME/tools/tmfp.py" --home "$HOME/tmfp-record" "$@"; \}\
+# then:\
+tmfp status\
+\pard\pardeftab720\sa298\partightenfactor0
+
+\f0\fs24 \cf0 \strokec2 <$Scr_H::2>
+\f1\b\fs36 OBS integration\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls1\ilvl0
+\f0\b0\fs24 \cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	1	}<!$Scr_H::2>
+\f2 	1	\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 After 
+\f3\fs26 init
+\f2\fs24 , find 
+\f3\fs26 ~/tmfp-record/obs/current.txt
+\f2\fs24 .\
+\ls1\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	2	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 In OBS add 
+\f1\b Text (FreeType 2)
+\f2\b0  on macOS, enable 
+\f1\b Read from file
+\f2\b0 , and select that path.\
+\ls1\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	3	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Style/position as a discreet on-screen telemetry stamp, optionally hide the source in some scenes.\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls1\ilvl0
+\f3\fs26 \cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	4	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 start
+\f2\fs24 , 
+\f3\fs26 mode
+\f2\fs24 , and 
+\f3\fs26 stop
+\f2\fs24  update that 
+\f1\b same path
+\f2\b0  automatically, regardless of daily repo rollover. Every day's snapshot also contains 
+\f3\fs26 obs/overlay.txt
+\f2\fs24 .\
+\pard\pardeftab720\sa240\partightenfactor0
+\cf0 \strokec2 Example OBS source content:\
+\pard\pardeftab720\partightenfactor0
+
+\f4\fs26 \cf0 \strokec2 \uc0\u9774 
+\f3  TMFP | THE WILDER-NESS ADVENTURES\
+DAY: TMFP-20261019-1A2B3C4D5E\
+SESSION: TMFP-20261019-1A2B3C4D5E-S001\
+MODE: WORKBENCH\
+TOPIC: Working on a prototype\
+UTC UPDATED: 2026-10-19T23:30:00Z\
+UTC START: 2026-10-19T23:25:00Z\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f1\b\fs24 \cf0 \strokec2 It is a metadata stamp, not a live clock.
+\f2\b0  The timestamp changes when status changes. Updating the text every video frame is neither necessary nor desirable for the first prototype. If the overlay is small, scale it at your intended mobile-viewing resolution to make sure it's readable.\
+\pard\pardeftab720\sa298\partightenfactor0
+
+\f0 \cf0 \strokec2 <$Scr_H::2>
+\f1\b\fs36 Structure\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b0\fs24 \cf0 \strokec2 <!$Scr_H::2>
+\f3\fs26 ~/tmfp-record/\
+  .tmfp/config.json              # local settings, never in a daily Git repo\
+  .tmfp/active_day.json          # active session pointer; removed on stop\
+  obs/current.txt               # STABLE file path for OBS\
+  days/\
+    tmfp-2026-10-19/            # INDEPENDENT GIT REPOSITORY\
+      .git/\
+      .gitattributes            # disable newline conversions for byte-stable hashing\
+      .gitignore\
+      README.md\
+      day.json                  # stable, unique day ID\
+      state.json                # current mode + session\
+      events.jsonl              # timestamped machine-readable event stream\
+      links.jsonl               # URL references; NOT downloaded/verified media\
+      chapters.txt              # chapter times for YouTube (may need editing)\
+      sessions/\
+        TMFP-...-S001.json      # stream start/end and session ID\
+      obs/overlay.txt           # daily snapshot of the OBS overlay\
+      pieces/                   # versioned editable source/text/code (small)\
+      artifacts/                # SHA-prefixed blobs copied by `attach`\
+      integrity/manifest.json   # list of SHA-256 file hashes + Merkle root\
+\pard\pardeftab720\sa240\partightenfactor0
+\cf0 \strokec2 checkpoint
+\f2\fs24 \strokec2  makes a normal Git commit of managed files. You can also edit files directly in 
+\f3\fs26 \strokec2 pieces/
+\f2\fs24 \strokec2  and commit changes; Git gives you normal 
+\f3\fs26 \strokec2 git log
+\f2\fs24 \strokec2 , 
+\f3\fs26 \strokec2 git diff
+\f2\fs24 \strokec2 , 
+\f3\fs26 \strokec2 git show
+\f2\fs24 \strokec2 , and branches. 
+\f3\fs26 \strokec2 attach --kind piece --replace
+\f2\fs24 \strokec2  is a handy way to copy a revised source file and track its diff. 
+\f3\fs26 \strokec2 attach --kind artifact
+\f2\fs24 \strokec2  uses a SHA-prefix filename to reduce collisions.\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f1\b \cf0 Do not commit large media to Git.
+\f2\b0  Upload footage and big datasets to the relevant service; record an HTTP(S) reference using 
+\f3\fs26 \strokec2 link
+\f2\fs24 \strokec2 . 
+\f3\fs26 \strokec2 --sha256
+\f2\fs24 \strokec2  on 
+\f3\fs26 \strokec2 link
+\f2\fs24 \strokec2  is an optional 
+\f5\i \strokec2 claimed
+\f2\i0 \strokec2  checksum and is clearly flagged as 
+\f1\b not independently verified by this CLI
+\f2\b0 . URL links can break; they are indexes, not backups. GitHub's recommended per-file and repo size limits still apply.\
+\pard\pardeftab720\sa298\partightenfactor0
+
+\f0 \cf0 \strokec2 <$Scr_H::2>
+\f1\b\fs36 What the Merkle seal proves\'97and does not prove\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f0\b0\fs24 \cf0 \strokec2 <!$Scr_H::2>
+\f2 At 
+\f3\fs26 \strokec2 seal
+\f2\fs24 \strokec2 , the CLI stages managed paths and collects the 
+\f1\b working-tree bytes of Git-tracked files
+\f2\b0  (including 
+\f3\fs26 \strokec2 events.jsonl
+\f2\fs24 \strokec2  and 
+\f3\fs26 \strokec2 obs/overlay.txt
+\f2\fs24 \strokec2 ). Paths are sorted in Unicode/UTF-8 order. It computes:\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs26 \cf0 \strokec2 file_sha256 = SHA256(file_bytes)\
+leaf = SHA256(0x00 || UTF8(repo_relative_path) || 0x00 || raw32(file_sha256))\
+parent = SHA256(0x01 || raw32(left_hash) || raw32(right_hash))\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f2\fs24 \cf0 \strokec2 For an odd-numbered tree level, duplicate the final node; an empty tree has root 
+\f3\fs26 \strokec2 SHA256(0x02)
+\f2\fs24 \strokec2 . Save the deterministic root and per-file digests in 
+\f3\fs26 \strokec2 integrity/manifest.json
+\f2\fs24 \strokec2 , excluding that file itself to avoid circular hashing. Then commit the manifest in Git. 
+\f3\fs26 \strokec2 verify
+\f2\fs24 \strokec2  recomputes the root and confirms that the current tracked file set and bytes match the manifest. Files untracked by Git are outside the seal.\
+The root attests to the consistency of a 
+\f5\i \strokec2 particular file snapshot
+\f2\i0 \strokec2 . It 
+\f1\b does not
+\f2\b0  prove who created the files, when they were originally recorded, that a video on YouTube contains certain frames, or that remote URLs still exist. A malicious person controlling the repository can rewrite the tree and re-seal it; independent timestamping/publishing of the root, signed tags, or trusted remote attestations would be a separate future step. Git commit hashes and the Merkle root serve different roles.\
+After any metadata update, the earlier seal becomes stale; run 
+\f3\fs26 \strokec2 seal
+\f2\fs24 \strokec2  again. 
+\f3\fs26 \strokec2 publish
+\f2\fs24 \strokec2  refuses unsealed/modified repos and defaults to 
+\f1\b private
+\f2\b0  GitHub repositories. You can publish additional commits later by sealing again and calling 
+\f3\fs26 \strokec2 publish
+\f2\fs24 \strokec2  again.\
+\pard\pardeftab720\sa298\partightenfactor0
+
+\f0 \cf0 \strokec2 <$Scr_H::2>
+\f1\b\fs36 Privacy and durability\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls2\ilvl0
+\f0\b0\fs24 \cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\'95	}<!$Scr_H::2>
+\f2 	\'95	\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 This CLI does 
+\f1\b not
+\f2\b0  record audio, video, screen contents, model prompts, or AI conversations itself. It indexes your existing media and files. 
+\f3\fs26 link
+\f2\fs24  only stores references.\
+\ls2\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 It only stages its own managed paths, but everything in 
+\f3\fs26 pieces/
+\f2\fs24 , 
+\f3\fs26 artifacts/
+\f2\fs24 , and 
+\f3\fs26 events.jsonl
+\f2\fs24  may become publicly readable if you publish the repository. Do not put API keys, home addresses, unconsented bystander information, private chats, etc. in those locations. 
+\f3\fs26 .gitignore
+\f2\fs24  blocks some common credential extensions but is 
+\f1\b not
+\f2\b0  a full secret scanner.\
+\ls2\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 The local Git commit identity is a clearly labeled 
+\f3\fs26 TMFP Local Recorder
+\f2\fs24  placeholder, not a cryptographic identity signature.\
+\ls2\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 One local root OBS text file always points to the current/most recently prepared day's overlay. Keep one active streaming session per workspace. For multiple simultaneous streamers, use separate workspaces.\
+\ls2\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Do 
+\f1\b not
+\f2\b0  treat platform storage as your only irreplaceable copy of original multimodal evidence. Preserve critical source transcripts, frame/video samples and application traces independently as resources allow.\
+\ls2\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 If your metadata is high volume (thousands of events per hour), the v0.1 whole-file event recount at each append and Git-per-day architecture should be upgraded to a streamable journal/index or SQLite/WAL with periodic exports.\
+\pard\pardeftab720\sa298\partightenfactor0
+
+\f0 \cf0 \strokec2 <$Scr_H::2>
+\f1\b\fs36 Tests\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b0\fs24 \cf0 \strokec2 <!$Scr_H::2>
+\f3\fs26 python3 -m unittest -v test_tmfp.py\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f2\fs24 \cf0 \strokec2 The tests create temporary independent Git repos, exercise multi-session days, links added after streams end, mode/chapter changes, piece revisions, and a SHA-256 seal that rejects tampered files and can be re-sealed.\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f1\b \cf0 Limitations / next versions:
+\f2\b0  interprocess metadata source from OBS WebSocket, capture of model/interface provenance, canonical stream-time alignment, signed event receipts, frame-index hashes, detached manifests independent of video platforms, true multi-device event ingestion, resumable upload integration, and compatibility testing with GitHub/YouTube/Hugging Face/Substack APIs (these online APIs were 
+\f1\b not
+\f2\b0  accessed or tested here).\
+}
